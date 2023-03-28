@@ -18,6 +18,8 @@ func (app *Application) Routes() *mux.Router {
 	})
 
 	rMux.HandleFunc("/data", app.ReadAllData)
+	rMux.HandleFunc("/city/{id:[0-9999]+}", app.GetInfo)
+	rMux.HandleFunc("/test", app.testCity)
 
 	return rMux
 }

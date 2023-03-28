@@ -1,6 +1,7 @@
 package main
 
 import (
+	"attestation/pgk/models"
 	"flag"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
@@ -12,6 +13,7 @@ type Application struct {
 	errorLog *log.Logger
 	infoLog  *log.Logger
 	Addr     string
+	DataDB   map[int]models.City
 }
 
 func main() {
@@ -21,13 +23,14 @@ func main() {
 
 	//logs
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
-	errorLog := log.New(os.Stdout, "ERORR\t", log.Ldate|log.Ltime|log.Lshortfile)
+	errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
 	//srv model
 	App := &Application{
 		errorLog: errorLog,
 		infoLog:  infoLog,
 		Addr:     *addr,
+		DataDB:   map[int]models.City{},
 	}
 
 	srv := &http.Server{
