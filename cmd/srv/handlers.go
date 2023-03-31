@@ -8,17 +8,15 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
 )
 
-// change to func for read and cash all data
-func (app *Application) ReadAllData(w http.ResponseWriter, r *http.Request) {
+func (app *Application) ReadAndCashFileData() {
 	file, err := os.Open("files/cities.csv")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		app.errorLog.Fatal(err)
 		return
 	}
 	defer file.Close()
@@ -30,11 +28,11 @@ func (app *Application) ReadAllData(w http.ResponseWriter, r *http.Request) {
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			log.Fatal(err)
+			app.errorLog.Fatal(err)
 		}
 		id, err := strconv.Atoi(line[0])
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			app.errorLog.Fatal(err)
 			return
 		}
 		district := json.Number(line[4])
@@ -47,13 +45,34 @@ func (app *Application) ReadAllData(w http.ResponseWriter, r *http.Request) {
 			Foundation: foundation,
 		}
 	}
-	w.Header().Set("Content-Type", "application/json")
+}
+func (app *Application) RewriteFileData() {
+	DataMap := app.DataDB
 
-	if err = json.NewEncoder(w).Encode(app.DataDB); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	csvFile, err := os.Open("files/cities.csv")
+	if err != nil {
+		app.errorLog.Fatal(err)
 	}
-	w.WriteHeader(http.StatusOK)
+	defer csvFile.Close()
+
+	csvWriter := csv.NewWriter(csvFile)
+
+	for key, value := range DataMap {
+		nPopulation, err := value.Population.Int64()
+		Population := strconv.Itoa(int(nPopulation))
+		if err != nil {
+			app.errorLog.Fatal(err)
+		}
+		nFoundation, err := value.Population.Int64()
+		Foundation := strconv.Itoa(int(nFoundation))
+		if err != nil {
+			app.errorLog.Fatal(err)
+		}
+		record := []string{string(key), value.Name, value.Region, value.District, Population, Foundation}
+		_ = csvWriter.Write(record)
+	}
+
+	csvWriter.Flush()
 }
 
 func (app *Application) testCity(w http.ResponseWriter, r *http.Request) {
