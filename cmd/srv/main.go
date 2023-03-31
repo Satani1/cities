@@ -2,11 +2,15 @@ package main
 
 import (
 	"attestation/pgk/models"
+	"context"
+	"errors"
 	"flag"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"time"
 )
 
 type Application struct {
@@ -44,6 +48,20 @@ func main() {
 	App.ReadAndCashFileData()
 	//launch
 	App.infoLog.Printf("Launching server on %s", App.Addr)
-	err := srv.ListenAndServe()
-	App.errorLog.Fatal(err)
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			App.errorLog.Fatalln(err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		App.errorLog.Fatalln(err)
+	}
+	App.infoLog.Fatalln("Server shutdown gracefully ;)")
 }
