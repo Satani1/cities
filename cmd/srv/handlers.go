@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
@@ -47,17 +48,20 @@ func (app *Application) ReadAndCashFileData() {
 	}
 }
 func (app *Application) RewriteFileData() {
-	DataMap := app.DataDB
-
-	csvFile, err := os.Open("files/cities.csv")
+	//open file
+	csvFile, err := os.Create("files/cities.csv")
 	if err != nil {
 		app.errorLog.Fatal(err)
 	}
 	defer csvFile.Close()
-
+	//writer
 	csvWriter := csv.NewWriter(csvFile)
+	csvWriter.Flush()
+	//slice of entries for writing
+	records := [][]string{}
 
-	for key, value := range DataMap {
+	for key, value := range app.DataDB {
+		//convert json.numbers to int64 then convert it to string
 		nPopulation, err := value.Population.Int64()
 		Population := strconv.Itoa(int(nPopulation))
 		if err != nil {
@@ -68,11 +72,26 @@ func (app *Application) RewriteFileData() {
 		if err != nil {
 			app.errorLog.Fatal(err)
 		}
-		record := []string{string(key), value.Name, value.Region, value.District, Population, Foundation}
-		_ = csvWriter.Write(record)
+		//create slice with data of city
+		tempRec := []string{strconv.Itoa(key), value.Name, value.Region, value.District, Population, Foundation}
+		//append data slice to slice of entries
+		records = append(records, tempRec)
+		fmt.Println(records)
 	}
+	//write records in file
+	for _, record := range records {
+		fmt.Println(record)
+		err := csvWriter.Write(record)
+		if err != nil {
+			app.errorLog.Fatalln(err)
+		}
+		app.infoLog.Fatalln("Records to write in this session : ", record)
+	}
+}
 
-	csvWriter.Flush()
+func (app *Application) testWrite(w http.ResponseWriter, r *http.Request) {
+	app.RewriteFileData()
+	w.Write([]byte("test writing data to file :/"))
 }
 
 func (app *Application) testCity(w http.ResponseWriter, r *http.Request) {
@@ -99,8 +118,6 @@ func (app *Application) GetInfo(w http.ResponseWriter, r *http.Request) {
 	var c models.City
 	if _, ok := app.DataDB[ID]; ok {
 		c = app.DataDB[ID]
-	} else {
-		http.Error(w, err.Error(), http.StatusNotFound)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(c); err != nil {
@@ -121,12 +138,17 @@ func (app *Application) CreateCity(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	id := 2000 + len(app.DataDB)
+	min, max := 2000, 9999
+	id := rand.Intn(max-min) + min
 	app.DataDB[id] = c
 
 	if err := json.NewEncoder(w).Encode(app.DataDB[id]); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	if _, err := w.Write([]byte("Created city with an id - " + strconv.Itoa(id))); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusCreated)
 

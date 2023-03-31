@@ -17,15 +17,16 @@ func (app *Application) Routes() *mux.Router {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	rMux.HandleFunc("/city/{id:[0-9999]+}", app.GetInfo)
-	rMux.HandleFunc("/test", app.testCity)
-	rMux.HandleFunc("/create", app.CreateCity)
-	rMux.HandleFunc("/delete", app.DeleteCity)
-	rMux.HandleFunc("/update-population", app.UpdatePopulation)
-	rMux.HandleFunc("/list-reg", app.ListByRegion)
-	rMux.HandleFunc("/list-dist", app.ListByDistrict)
-	rMux.HandleFunc("/list-pop", app.ListByPopulation)
-	rMux.HandleFunc("/list-found", app.ListByFoundation)
+	rMux.HandleFunc("/city/{id:[0-9999]+}", app.GetInfo).Methods("GET")
+	rMux.HandleFunc("/test", app.testCity).Methods("GET")
+	rMux.HandleFunc("/create", app.CreateCity).Methods("POST")
+	rMux.HandleFunc("/delete", app.DeleteCity).Methods("DELETE")
+	rMux.HandleFunc("/update-population", app.UpdatePopulation).Methods("PUT")
+	rMux.HandleFunc("/list-reg", app.ListByRegion).Methods("GET")
+	rMux.HandleFunc("/list-dist", app.ListByDistrict).Methods("GET")
+	rMux.HandleFunc("/list-pop", app.ListByPopulation).Methods("GET")
+	rMux.HandleFunc("/list-found", app.ListByFoundation).Methods("GET")
+	rMux.HandleFunc("/file", app.testWrite).Methods("GET")
 
 	return rMux
 }

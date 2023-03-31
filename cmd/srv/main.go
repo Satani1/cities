@@ -60,8 +60,10 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
 	if err := srv.Shutdown(ctx); err != nil {
 		App.errorLog.Fatalln(err)
 	}
+	App.RewriteFileData()
 	App.infoLog.Fatalln("Server shutdown gracefully ;)")
 }
