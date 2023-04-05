@@ -5,7 +5,6 @@ import (
 	"bufio"
 	"encoding/csv"
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/mux"
 	"io"
 	"math/rand"
@@ -49,16 +48,16 @@ func (app *Application) ReadAndCashFileData() {
 }
 func (app *Application) RewriteFileData() {
 	//open file
-	csvFile, err := os.Create("files/cities.csv")
+	csvFile, err := os.OpenFile("files/cities.csv", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+
 	if err != nil {
 		app.errorLog.Fatal(err)
 	}
 	defer csvFile.Close()
 	//writer
 	csvWriter := csv.NewWriter(csvFile)
-	csvWriter.Flush()
 	//slice of entries for writing
-	records := [][]string{}
+	var records [][]string
 
 	for key, value := range app.DataDB {
 		//convert json.numbers to int64 then convert it to string
@@ -76,34 +75,34 @@ func (app *Application) RewriteFileData() {
 		tempRec := []string{strconv.Itoa(key), value.Name, value.Region, value.District, Population, Foundation}
 		//append data slice to slice of entries
 		records = append(records, tempRec)
-		fmt.Println(records)
 	}
+
+	//doesn't work
+
 	//write records in file
-	for _, record := range records {
-		fmt.Println(record)
-		err := csvWriter.Write(record)
-		if err != nil {
-			app.errorLog.Fatalln(err)
-		}
-		app.infoLog.Fatalln("Records to write in this session : ", record)
+	//for _, record := range records {
+	//	fmt.Println(record)
+	//	err := csvWriter.Write(record)
+	//	if err != nil {
+	//		app.errorLog.Fatalln(err)
+	//	}
+	//	app.infoLog.Fatalln("Records to write in this session : ", record)
+	//}
+
+	if err := csvWriter.WriteAll(records); err != nil {
+		app.errorLog.Fatalln("Error with writing data to file", err)
 	}
+
+	csvWriter.Flush()
+	if err := csvWriter.Error(); err != nil {
+		app.errorLog.Fatalln("-Error from flush- ", err)
+	}
+
 }
 
 func (app *Application) testWrite(w http.ResponseWriter, r *http.Request) {
 	app.RewriteFileData()
 	w.Write([]byte("test writing data to file :/"))
-}
-
-func (app *Application) testCity(w http.ResponseWriter, r *http.Request) {
-	var c models.City = app.DataDB[490]
-	fmt.Fprintf(w, "City: %v\n", c)
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(c); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-
 }
 
 func (app *Application) GetInfo(w http.ResponseWriter, r *http.Request) {

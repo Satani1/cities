@@ -18,7 +18,6 @@ func (app *Application) Routes() *mux.Router {
 	})
 
 	rMux.HandleFunc("/city/{id:[0-9999]+}", app.GetInfo).Methods("GET")
-	rMux.HandleFunc("/test", app.testCity).Methods("GET")
 	rMux.HandleFunc("/create", app.CreateCity).Methods("POST")
 	rMux.HandleFunc("/delete", app.DeleteCity).Methods("DELETE")
 	rMux.HandleFunc("/update-population", app.UpdatePopulation).Methods("PUT")
